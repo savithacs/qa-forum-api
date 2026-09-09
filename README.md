@@ -1,4 +1,4 @@
-# QA Forum
+# QA Forum API
 
 A backend API for a QA-focused discussion forum, built with NestJS and PostgreSQL.
 

@@ -38,7 +38,7 @@ export class QuestionsService {
         },
       },
     });
-    if (!question) throw new NotFoundException();
+    if (!question) throw new NotFoundException('Question not found');
     return question;
   }
 
@@ -108,9 +108,7 @@ export class QuestionsService {
 
   async updateAnswer(id: string, dto: CreateAnswerDto, userId: string) {
     const answer = await this.findByIdOrFailAnswer(id);
-    if (!answer) {
-      throw new NotFoundException('Answer not found');
-    }
+
     if (answer.ownerId != userId) {
       throw new ForbiddenException('You can edit only your own answers');
     }
@@ -120,9 +118,7 @@ export class QuestionsService {
 
   async deleteAnswer(id: string, userId: string) {
     const answer = await this.findByIdOrFailAnswer(id);
-    if (!answer) {
-      throw new NotFoundException('Answer not found');
-    }
+
     if (answer.ownerId != userId) {
       throw new ForbiddenException('You can delete only your own answers');
     }
