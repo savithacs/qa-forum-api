@@ -1,18 +1,37 @@
 import { AnswerResponseDto } from './answer-response.dto';
 import { Question } from '../entities/questions.entity';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class QuestionResponseDto {
+  @ApiProperty({
+    example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
+  })
   id: string;
 
+  @ApiProperty({
+    example: 'How do I mock a service in NestJS?',
+  })
   title: string;
 
+  @ApiProperty({
+    example: 'I am writing unit tests and want to mock a dependency.',
+  })
   description: string;
 
+  @ApiProperty({
+    type: () => UserResponseDto,
+  })
   questionBy: UserResponseDto;
 
+  @ApiProperty({
+    example: '2026-09-09T10:30:00.000Z',
+  })
   createdAt: Date;
 
+  @ApiProperty({
+    type: () => [AnswerResponseDto],
+  })
   answers: AnswerResponseDto[];
 
   static fromEntity(question: Question): QuestionResponseDto {

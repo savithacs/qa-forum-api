@@ -18,11 +18,14 @@ import { type AuthenticatedRequest } from 'src/auth/types/auth.types';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { AnswerResponseDto } from './dto/answer-response.dto';
+import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('questions')
 export class QuestionsController {
-  constructor(private readonly questionsService: QuestionsService) {}
+  constructor(private readonly questionsService: QuestionsService) { }
 
+  @ApiOkResponse({ type: [QuestionResponseDto] })
   @Get()
   async findAllQuestions() {
     const questions = await this.questionsService.findAll();
@@ -31,12 +34,14 @@ export class QuestionsController {
     );
   }
 
+  @ApiOkResponse({ type: QuestionResponseDto })
   @Get(':id')
   async findQuestionById(@Param('id', ParseUUIDPipe) id: string) {
     const question = await this.questionsService.findById(id);
     return QuestionResponseDto.fromEntity(question);
   }
 
+  @ApiCreatedResponse({ type: QuestionResponseDto })
   @Post()
   async createQuestion(
     @Body() dto: CreateQuestionDto,
@@ -49,6 +54,15 @@ export class QuestionsController {
     return QuestionResponseDto.fromEntity(question);
   }
 
+  @ApiOkResponse({
+    schema: {
+      example: {
+        generatedMaps: [],
+        raw: [],
+        affected: 1,
+      },
+    },
+  })
   @Patch(':id')
   updateQuestion(
     @Param('id', ParseUUIDPipe) id: string,
@@ -58,6 +72,7 @@ export class QuestionsController {
     return this.questionsService.updateQuestion(id, dto, req.user.id);
   }
 
+  @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteQuestion(
@@ -67,6 +82,7 @@ export class QuestionsController {
     return this.questionsService.deleteQuestion(id, req.user.id);
   }
 
+  @ApiCreatedResponse({ type: AnswerResponseDto })
   @Post(':id/answers')
   async createAnswer(
     @Param('id', ParseUUIDPipe) id: string,
@@ -90,6 +106,7 @@ export class QuestionsController {
     return this.questionsService.updateAnswer(id, dto, req.user.id);
   }
 
+  @ApiNoContentResponse()
   @Delete('answers/:answerid')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteAnswer(

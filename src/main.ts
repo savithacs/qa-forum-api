@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,12 +17,17 @@ async function bootstrap() {
     }),
   );
 
-  /*  app.useGlobalInterceptors(
-    new ClassSerializerInterceptor(app.get(Reflector), {
-      enableImplicitConversion: true,
-      excludeExtraneousValues: true,
-    }),
-  ); */
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('QA Forum API')
+    .setDescription('API Documentation for the QA Forum')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+
+  SwaggerModule.setup('api', app, document);
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

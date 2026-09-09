@@ -1,13 +1,26 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Answer } from '../entities/answers.entity';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
 
 export class AnswerResponseDto {
+  @ApiProperty({
+    example: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
+  })
   id: string;
 
+  @ApiProperty({
+    example: 'You can mock the service using a testing module.',
+  })
   content: string;
 
+  @ApiProperty({
+    type: () => UserResponseDto,
+  })
   answerBy: UserResponseDto;
 
+  @ApiProperty({
+    example: '2026-09-09T10:30:00.000Z',
+  })
   createdAt: Date;
 
   static fromEntity(answer: Answer): AnswerResponseDto {
