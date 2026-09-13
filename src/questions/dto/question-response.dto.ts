@@ -25,6 +25,12 @@ export class QuestionResponseDto {
   questionBy: UserResponseDto;
 
   @ApiProperty({
+    example: 5,
+    description: 'Number of votes for this question',
+  })
+  voteCount: number;
+
+  @ApiProperty({
     example: '2026-09-09T10:30:00.000Z',
   })
   createdAt: Date;
@@ -34,12 +40,16 @@ export class QuestionResponseDto {
   })
   answers: AnswerResponseDto[];
 
-  static fromEntity(question: Question): QuestionResponseDto {
+  static fromEntity(
+    question: Question,
+    voteCount: number,
+  ): QuestionResponseDto {
     const dto = new QuestionResponseDto();
     dto.id = question.id;
     dto.title = question.title;
     dto.description = question.description;
     dto.createdAt = question.createdAt;
+    dto.voteCount = voteCount;
     // The relation is loaded on some code paths and not on others, so read the
     // id defensively rather than assuming `offer.auction` is there.
     dto.questionBy = question.owner
@@ -47,7 +57,9 @@ export class QuestionResponseDto {
       : undefined;
     if (question.answers)
       dto.answers = question.answers
-        ? question.answers.map((answer) => AnswerResponseDto.fromEntity(answer))
+        ? question.answers.map((answer) =>
+          AnswerResponseDto.fromEntity(answer, answer.voteCount),
+        )
         : [];
     return dto;
   }

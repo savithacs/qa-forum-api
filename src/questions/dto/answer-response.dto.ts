@@ -19,15 +19,22 @@ export class AnswerResponseDto {
   answerBy: UserResponseDto;
 
   @ApiProperty({
+    example: 5,
+    description: 'Number of votes for this answer',
+  })
+  voteCount: number;
+
+  @ApiProperty({
     example: '2026-09-09T10:30:00.000Z',
   })
   createdAt: Date;
 
-  static fromEntity(answer: Answer): AnswerResponseDto {
+  static fromEntity(answer: Answer, voteCount: number): AnswerResponseDto {
     const dto = new AnswerResponseDto();
     dto.id = answer.id;
     dto.content = answer.content;
     dto.createdAt = answer.createdAt;
+    dto.voteCount = voteCount;
     // The relation is loaded on some code paths and not on others, so read the
     // id defensively rather than assuming `offer.auction` is there.
     dto.answerBy = answer.owner

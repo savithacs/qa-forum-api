@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Answer } from './answers.entity';
+import { Voting } from 'src/voting/entities/voting.entity';
 
 @Entity('questions')
 export class Question {
@@ -35,4 +36,9 @@ export class Question {
 
   @OneToMany(() => Answer, (answer) => answer.question)
   answers: Answer[];
+
+  @OneToMany(() => Voting, (voting) => voting.question)
+  votings: Voting[];
+
+  voteCount: number;
 }

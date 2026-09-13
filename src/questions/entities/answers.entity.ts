@@ -5,9 +5,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Question } from './questions.entity';
+import { Voting } from 'src/voting/entities/voting.entity';
 
 @Entity('answers')
 export class Answer {
@@ -35,6 +37,11 @@ export class Answer {
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
+  @OneToMany(() => Voting, (voting) => voting.answer)
+  votings: Voting[];
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  voteCount: number;
 }

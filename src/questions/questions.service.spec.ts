@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Question } from './entities/questions.entity';
 import { Answer } from './entities/answers.entity';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Voting } from 'src/voting/entities/voting.entity';
 
 describe('QuestionsService', () => {
   let service: QuestionsService;
@@ -24,6 +25,18 @@ describe('QuestionsService', () => {
     save: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+  };
+
+  const mockQueryBuilder = {
+    select: vi.fn().mockReturnThis(),
+    addSelect: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    groupBy: vi.fn().mockReturnThis(),
+    getRawMany: vi.fn(),
+  };
+
+  const mockVotingRepository = {
+    createQueryBuilder: vi.fn(() => mockQueryBuilder),
   };
 
   const questionDto = {
@@ -51,6 +64,10 @@ describe('QuestionsService', () => {
           provide: getRepositoryToken(Answer),
           useValue: mockAnswerRepository,
         },
+        {
+          provide: getRepositoryToken(Voting),
+          useValue: mockVotingRepository,
+        },
       ],
     }).compile();
 
@@ -73,39 +90,65 @@ describe('QuestionsService', () => {
     ];
 
     mockQuestionRepository.find.mockResolvedValue(allQuestion);
+
+    mockQueryBuilder.getRawMany.mockResolvedValue([
+      {
+        questionId: '11111111-2222-1111-2222-111111111111',
+        count: '3',
+      },
+    ]);
+
     const result = await service.findAll();
 
     expect(result).toEqual(allQuestion);
+    expect(result[0].voteCount).toBe(3);
   });
 
   it('should retreive question with all answers by question Id', async () => {
-    const question = [
-      {
-        id: '11111111-2222-1111-2222-111111111111',
-        title: 'first question for testing',
-        description: 'first description',
-        owner: {
-          username: 'TestUser2',
-          id: '11111111-2222-2222-2222-111111111111',
-          email: 'abc2@example.com',
-        },
-        createdAt: '2026-08-25T16:21:36.574Z',
-        answers: [
-          {
-            id: '11111111-2222-1111-1111-111111111111',
-            content: 'first answer',
-            answerBy: {
-              username: 'TestUser',
-              id: '11111111-2222-2222-2222-111111111111',
-              email: 'abc@example.com',
-            },
-            createdAt: '2026-09-02T12:30:37.852Z',
-          },
-        ],
+    const question = {
+      id: '11111111-2222-1111-2222-111111111111',
+      title: 'first question for testing',
+      description: 'first description',
+      owner: {
+        username: 'TestUser2',
+        id: '11111111-2222-2222-2222-111111111111',
+        email: 'abc2@example.com',
       },
-    ];
+      createdAt: '2026-08-25T16:21:36.574Z',
+      answers: [
+        {
+          id: '11111111-2222-1111-1111-111111111111',
+          content: 'first answer',
+          answerBy: {
+            username: 'TestUser',
+            id: '11111111-2222-2222-2222-111111111111',
+            email: 'abc@example.com',
+          },
+          createdAt: '2026-09-02T12:30:37.852Z',
+        },
+      ],
+    };
 
     mockQuestionRepository.findOne.mockResolvedValue(question);
+
+    mockVotingRepository.createQueryBuilder
+      .mockReturnValueOnce(mockQueryBuilder)
+      .mockReturnValueOnce(mockQueryBuilder);
+
+    mockQueryBuilder.getRawMany
+      .mockResolvedValueOnce([
+        {
+          questionId: '11111111-2222-1111-2222-111111111111',
+          count: '5',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          answerId: '11111111-2222-1111-1111-111111111111',
+          count: '2',
+        },
+      ]);
+
     const result = await service.findById(
       '11111111-2222-1111-2222-111111111111',
     );
@@ -119,6 +162,8 @@ describe('QuestionsService', () => {
     );
 
     expect(result).toEqual(question);
+    expect(result.voteCount).toBe(5);
+    expect(result.answers[0].voteCount).toBe(2);
   });
 
   it('should throw not found exception when with incorrect question Id', async () => {

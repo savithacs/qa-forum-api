@@ -10,6 +10,16 @@ import { Answer } from './entities/answers.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
+import { Voting } from 'src/voting/entities/voting.entity';
+
+type VoteCount = {
+  questionId: string;
+  count: string;
+};
+type AnswerVoteCount = {
+  answerId: string;
+  count: string;
+};
 
 @Injectable()
 export class QuestionsService {
@@ -18,14 +28,34 @@ export class QuestionsService {
     private readonly questions: Repository<Question>,
     @InjectRepository(Answer)
     private readonly answers: Repository<Answer>,
-  ) {}
+    @InjectRepository(Voting)
+    private readonly voting: Repository<Voting>,
+  ) { }
 
-  findAll() {
-    return this.questions.find({
+  async findAll() {
+    const questions = await this.questions.find({
       relations: {
         owner: true,
       },
     });
+
+    const voteCounts = await this.voting
+      .createQueryBuilder('voting')
+      .select('voting.questionId', 'questionId')
+      .addSelect('COUNT(voting.id)', 'count')
+      .where('voting.questionId IS NOT NULL')
+      .groupBy('voting.questionId')
+      .getRawMany<VoteCount>();
+
+    const counts = new Map(
+      voteCounts.map((item) => [item.questionId, Number(item.count)]),
+    );
+
+    for (const question of questions) {
+      question.voteCount = counts.get(question.id) ?? 0;
+    }
+
+    return questions;
   }
 
   async findById(id: string) {
@@ -39,6 +69,38 @@ export class QuestionsService {
       },
     });
     if (!question) throw new NotFoundException('Question not found');
+    const questionVoteCounts = await this.voting
+      .createQueryBuilder('voting')
+      .select('voting.questionId', 'questionId')
+      .addSelect('COUNT(voting.id)', 'count')
+      .where('voting.questionId IS NOT NULL')
+      .groupBy('voting.questionId')
+      .getRawMany<VoteCount>();
+
+    const counts = new Map(
+      questionVoteCounts.map((item) => [item.questionId, Number(item.count)]),
+    );
+
+    question.voteCount = counts.get(question.id) ?? 0;
+
+    const answerIds = question.answers.map((answer) => answer.id);
+    if (answerIds.length > 0) {
+      const answerVoteCounts = await this.voting
+        .createQueryBuilder('voting')
+        .select('voting.answerId', 'answerId')
+        .addSelect('COUNT(voting.id)', 'count')
+        .where('voting.answerId IN (:...answerIds)', { answerIds })
+        .groupBy('voting.answerId')
+        .getRawMany<AnswerVoteCount>();
+
+      const answerCounts = new Map(
+        answerVoteCounts.map((item) => [item.answerId, Number(item.count)]),
+      );
+
+      for (const answer of question.answers) {
+        answer.voteCount = answerCounts.get(answer.id) ?? 0;
+      }
+    }
     return question;
   }
 

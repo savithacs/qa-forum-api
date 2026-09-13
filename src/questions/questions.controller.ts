@@ -18,7 +18,12 @@ import { type AuthenticatedRequest } from 'src/auth/types/auth.types';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { AnswerResponseDto } from './dto/answer-response.dto';
-import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 
 @ApiBearerAuth()
 @Controller('questions')
@@ -30,7 +35,7 @@ export class QuestionsController {
   async findAllQuestions() {
     const questions = await this.questionsService.findAll();
     return questions.map((question) =>
-      QuestionResponseDto.fromEntity(question),
+      QuestionResponseDto.fromEntity(question, question.voteCount),
     );
   }
 
@@ -38,7 +43,7 @@ export class QuestionsController {
   @Get(':id')
   async findQuestionById(@Param('id', ParseUUIDPipe) id: string) {
     const question = await this.questionsService.findById(id);
-    return QuestionResponseDto.fromEntity(question);
+    return QuestionResponseDto.fromEntity(question, question.voteCount);
   }
 
   @ApiCreatedResponse({ type: QuestionResponseDto })
@@ -51,7 +56,7 @@ export class QuestionsController {
       dto,
       req.user.id,
     );
-    return QuestionResponseDto.fromEntity(question);
+    return QuestionResponseDto.fromEntity(question, 0);
   }
 
   @ApiOkResponse({
@@ -94,7 +99,7 @@ export class QuestionsController {
       dto,
       req.user.id,
     );
-    return AnswerResponseDto.fromEntity(answer);
+    return AnswerResponseDto.fromEntity(answer, 0);
   }
 
   @Patch('answers/:answerid')
