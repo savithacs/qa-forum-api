@@ -24,9 +24,11 @@ import {
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { QuestionQueryDto } from './dto/question-query.dto';
 import { Public } from 'src/common/decorators/public-decorator';
+import { PaginatedQuestionsResponseDto } from './dto/questions-pagination-response.dto';
 
 @ApiBearerAuth()
 @Controller('questions')
@@ -34,7 +36,28 @@ export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) { }
 
   @Public()
-  @ApiOkResponse({ type: [QuestionResponseDto] })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Number of questions per page',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    example: 'JWT',
+    description: 'Search questions by title or description',
+  })
+  @ApiOkResponse({ type: PaginatedQuestionsResponseDto })
   @Get()
   async findAll(@Query() query: QuestionQueryDto) {
     const result = await this.questionsService.findAll(query);
