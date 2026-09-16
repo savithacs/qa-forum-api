@@ -5,12 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Question } from './entities/questions.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { Answer } from './entities/answers.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { Voting } from 'src/voting/entities/voting.entity';
+import { QuestionQueryDto } from './dto/question-query.dto';
 
 type VoteCount = {
   questionId: string;
@@ -32,11 +33,19 @@ export class QuestionsService {
     private readonly voting: Repository<Voting>,
   ) { }
 
-  async findAll() {
-    const questions = await this.questions.find({
+  async findAll(query: QuestionQueryDto) {
+    const { page, limit, search } = query;
+    const where: FindOptionsWhere<Question>[] | undefined = search
+      ? [{ title: Like(`%${search}%`) }, { description: Like(`%${search}%`) }]
+      : undefined;
+    const [data, total] = await this.questions.findAndCount({
+      where,
       relations: {
         owner: true,
       },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     const voteCounts = await this.voting
@@ -51,11 +60,20 @@ export class QuestionsService {
       voteCounts.map((item) => [item.questionId, Number(item.count)]),
     );
 
-    for (const question of questions) {
+    for (const question of data) {
       question.voteCount = counts.get(question.id) ?? 0;
     }
 
-    return questions;
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+    //return questions;
   }
 
   async findById(id: string) {

@@ -51,19 +51,19 @@ describe('Questions E2E Testing', () => {
     await db?.container.stop();
   });
 
-  it('GET /questions rejects unauthenticated requests', async () => {
-    await request(app.getHttpServer()).get('/questions').expect(401);
-  });
 
-  it('GET /questions returns questions for authenticated user', async () => {
-    const token = await createAuthenticatedUser(app);
-
+  it('GET /questions returns questions', async () => {
     const response = await request(app.getHttpServer())
       .get('/questions')
-      .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body.data).toEqual([]);
+    expect(response.body.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    });
   });
 
   it('POST /questions creates a question for an authenticated user', async () => {
@@ -104,20 +104,116 @@ describe('Questions E2E Testing', () => {
 
     const response = await request(app.getHttpServer())
       .get('/questions')
-      .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(response.body).toHaveLength(1);
+    expect(response.body.data).toHaveLength(1);
 
-    expect(response.body[0]).toMatchObject({
+    expect(response.body.data[0]).toMatchObject({
       title: 'How does JWT authentication work?',
       description:
         'I want to understand how JWT authentication works in NestJS.',
     });
 
-    expect(response.body[0].questionBy).toMatchObject({
+    expect(response.body.data[0].questionBy).toMatchObject({
       username: 'alice',
       email: 'alice@example.com',
+    });
+
+    expect(response.body.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
+  it('GET /questions supports pagination', async () => {
+    const token = await createAuthenticatedUser(app);
+
+    const questions = [
+      {
+        title: 'First question',
+        description: 'First description',
+      },
+      {
+        title: 'Second question',
+        description: 'Second description',
+      },
+      {
+        title: 'Third question',
+        description: 'Third description',
+      },
+    ];
+
+    for (const question of questions) {
+      await request(app.getHttpServer())
+        .post('/questions')
+        .set('Authorization', `Bearer ${token}`)
+        .send(question)
+        .expect(201);
+    }
+
+    const pageOne = await request(app.getHttpServer())
+      .get('/questions?page=1&limit=2')
+      .expect(200);
+
+    expect(pageOne.body.data).toHaveLength(2);
+    expect(pageOne.body.meta).toEqual({
+      page: 1,
+      limit: 2,
+      total: 3,
+      totalPages: 2,
+    });
+
+    const pageTwo = await request(app.getHttpServer())
+      .get('/questions?page=2&limit=2')
+      .expect(200);
+
+    expect(pageTwo.body.data).toHaveLength(1);
+    expect(pageTwo.body.meta).toEqual({
+      page: 2,
+      limit: 2,
+      total: 3,
+      totalPages: 2,
+    });
+  });
+
+  it('GET /questions supports search', async () => {
+    const token = await createAuthenticatedUser(app);
+
+    await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'How does JWT authentication work?',
+        description: 'Understanding authentication in NestJS.',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'How does PostgreSQL work?',
+        description: 'Learning database fundamentals.',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/questions?search=JWT')
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(1);
+
+    expect(response.body.data[0]).toMatchObject({
+      title: 'How does JWT authentication work?',
+    });
+
+    expect(response.body.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
     });
   });
 
@@ -151,7 +247,6 @@ describe('Questions E2E Testing', () => {
 
     const response = await request(app.getHttpServer())
       .get(`/questions/${questionId}`)
-      .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
     expect(response.body).toMatchObject({
@@ -176,7 +271,6 @@ describe('Questions E2E Testing', () => {
 
     await request(app.getHttpServer())
       .get(`/questions/${nonExistentId}`)
-      .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });
 
@@ -185,7 +279,6 @@ describe('Questions E2E Testing', () => {
 
     await request(app.getHttpServer())
       .get('/questions/not-a-valid-uuid')
-      .set('Authorization', `Bearer ${token}`)
       .expect(400);
   });
 

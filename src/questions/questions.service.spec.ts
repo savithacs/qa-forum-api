@@ -17,6 +17,7 @@ describe('QuestionsService', () => {
     save: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    findAndCount: vi.fn(),
   };
 
   const mockAnswerRepository = {
@@ -89,7 +90,7 @@ describe('QuestionsService', () => {
       },
     ];
 
-    mockQuestionRepository.find.mockResolvedValue(allQuestion);
+    mockQuestionRepository.findAndCount.mockResolvedValue([allQuestion, 1]);
 
     mockQueryBuilder.getRawMany.mockResolvedValue([
       {
@@ -98,10 +99,17 @@ describe('QuestionsService', () => {
       },
     ]);
 
-    const result = await service.findAll();
+    const result = await service.findAll({ page: 1, limit: 10 });
 
-    expect(result).toEqual(allQuestion);
-    expect(result[0].voteCount).toBe(3);
+    expect(result.data).toEqual(allQuestion);
+    expect(result.data[0].voteCount).toBe(3);
+
+    expect(result.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
   });
 
   it('should retreive question with all answers by question Id', async () => {

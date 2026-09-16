@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Request,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
@@ -24,21 +25,29 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
 } from '@nestjs/swagger';
+import { QuestionQueryDto } from './dto/question-query.dto';
+import { Public } from 'src/common/decorators/public-decorator';
 
 @ApiBearerAuth()
 @Controller('questions')
 export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) { }
 
+  @Public()
   @ApiOkResponse({ type: [QuestionResponseDto] })
   @Get()
-  async findAllQuestions() {
-    const questions = await this.questionsService.findAll();
-    return questions.map((question) =>
-      QuestionResponseDto.fromEntity(question, question.voteCount),
-    );
+  async findAll(@Query() query: QuestionQueryDto) {
+    const result = await this.questionsService.findAll(query);
+
+    return {
+      data: result.data.map((question) =>
+        QuestionResponseDto.fromEntity(question, question.voteCount),
+      ),
+      meta: result.meta,
+    };
   }
 
+  @Public()
   @ApiOkResponse({ type: QuestionResponseDto })
   @Get(':id')
   async findQuestionById(@Param('id', ParseUUIDPipe) id: string) {
