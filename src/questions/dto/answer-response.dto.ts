@@ -14,6 +14,12 @@ export class AnswerResponseDto {
   content: string;
 
   @ApiProperty({
+    type: [String],
+    example: ['nestjs', 'jwt', 'postgres'],
+  })
+  tags: string[];
+
+  @ApiProperty({
     type: () => UserResponseDto,
   })
   answerBy: UserResponseDto;
@@ -33,6 +39,8 @@ export class AnswerResponseDto {
     const dto = new AnswerResponseDto();
     dto.id = answer.id;
     dto.content = answer.content;
+    dto.tags =
+      answer.answerTags?.map((answerTag) => answerTag.tag.tagName) ?? [];
     dto.createdAt = answer.createdAt;
     dto.voteCount = voteCount;
     // The relation is loaded on some code paths and not on others, so read the

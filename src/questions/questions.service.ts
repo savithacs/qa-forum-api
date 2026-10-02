@@ -12,6 +12,7 @@ import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { Voting } from 'src/voting/entities/voting.entity';
 import { QuestionQueryDto } from './dto/question-query.dto';
+import { TagsService } from 'src/tags/tags.service';
 
 type VoteCount = {
   questionId: string;
@@ -31,6 +32,7 @@ export class QuestionsService {
     private readonly answers: Repository<Answer>,
     @InjectRepository(Voting)
     private readonly voting: Repository<Voting>,
+    private readonly tagService: TagsService,
   ) { }
 
   async findAll(query: QuestionQueryDto) {
@@ -42,6 +44,9 @@ export class QuestionsService {
       where,
       relations: {
         owner: true,
+        questionTags: {
+          tag: true,
+        },
       },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -81,8 +86,14 @@ export class QuestionsService {
       where: { id },
       relations: {
         owner: true,
+        questionTags: {
+          tag: true,
+        },
         answers: {
           owner: true,
+          answerTags: {
+            tag: true,
+          },
         },
       },
     });
@@ -122,9 +133,19 @@ export class QuestionsService {
     return question;
   }
 
-  createQuestion(dto: CreateQuestionDto, userId: string) {
-    const question = this.questions.create({ ...dto, ownerId: userId });
-    return this.questions.save(question);
+  async createQuestion(dto: CreateQuestionDto, userId: string) {
+    const question = this.questions.create({
+      title: dto.title,
+      description: dto.description,
+      ownerId: userId,
+    });
+    const savedQuestion = await this.questions.save(question);
+    if (dto.tags) {
+      for (const tag of dto.tags) {
+        await this.tagService.addQuestionTag(tag, savedQuestion.id);
+      }
+    }
+    return savedQuestion;
   }
 
   async findByIdOrFailQuestion(id: string): Promise<Question> {
@@ -149,7 +170,14 @@ export class QuestionsService {
       throw new ForbiddenException('You can edit only your own questions');
     }
 
-    return this.questions.update(questionId, dto);
+    const updatedQuestion = await this.questions.update(questionId, {
+      title: dto.title,
+      description: dto.description,
+    });
+    if (dto.tags !== undefined)
+      await this.tagService.updateQuestionTags(questionId, dto.tags);
+
+    return updatedQuestion;
   }
 
   async deleteQuestion(questionId: string, userId: string) {
@@ -162,16 +190,27 @@ export class QuestionsService {
   }
 
   async createAnswer(questionId: string, dto: CreateAnswerDto, userId: string) {
-    const question = await this.findByIdOrFailQuestion(questionId);
-    if (question) {
-      const answer = this.answers.create({
-        questionId,
-        content: dto.content,
-        ownerId: userId,
-      });
+    await this.findByIdOrFailQuestion(questionId);
 
-      return this.answers.save(answer);
+    const answer = this.answers.create({
+      questionId,
+      content: dto.content,
+      ownerId: userId,
+    });
+
+    const savedAnswer = await this.answers.save(answer);
+    if (dto.tags) {
+      for (const tag of dto.tags)
+        await this.tagService.addAnswerTag(tag, savedAnswer.id);
     }
+    return this.answers.findOneOrFail({
+      where: { id: savedAnswer.id },
+      relations: {
+        answerTags: {
+          tag: true,
+        },
+      },
+    });
   }
 
   async findByIdOrFailAnswer(id: string): Promise<Answer> {
@@ -193,7 +232,12 @@ export class QuestionsService {
       throw new ForbiddenException('You can edit only your own answers');
     }
 
-    return this.answers.update(id, dto);
+    const updatedAnswer = this.answers.update(id, {
+      content: dto.content,
+    });
+    if (dto.tags !== undefined)
+      await this.tagService.updateAnswerTags(id, dto.tags);
+    return updatedAnswer;
   }
 
   async deleteAnswer(id: string, userId: string) {

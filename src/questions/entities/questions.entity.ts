@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Answer } from './answers.entity';
 import { Voting } from 'src/voting/entities/voting.entity';
+import { QuestionTag } from 'src/tags/entities/questionTag.entity';
 
 @Entity('questions')
 export class Question {
@@ -41,4 +42,8 @@ export class Question {
   votings: Voting[];
 
   voteCount: number;
+
+  @OneToMany(() => QuestionTag, (questionTag) => questionTag.question)
+  questionTags: QuestionTag[];
+
 }

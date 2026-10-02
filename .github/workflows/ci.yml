@@ -1,7 +1,12 @@
-name: CI Pipeline
+name: CI
+
 on:
   push:
   pull_request:
+
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,9 +17,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 26
-          cache: "npm"
+          cache: npm
       - run: npm ci
       - run: npm run test
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -22,6 +28,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 26
-          cache: "npm"
+          cache: npm
       - run: npm ci
       - run: npm run build

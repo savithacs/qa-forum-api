@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateAnswerDto {
   @ApiProperty({
@@ -9,4 +9,12 @@ export class CreateAnswerDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @ApiPropertyOptional({
+    example: ' [nestjs, jwt, postgres]',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }

@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Question } from './questions.entity';
 import { Voting } from 'src/voting/entities/voting.entity';
+import { AnswerTag } from 'src/tags/entities/answerTag.entity';
 
 @Entity('answers')
 export class Answer {
@@ -39,6 +40,9 @@ export class Answer {
 
   @OneToMany(() => Voting, (voting) => voting.answer)
   votings: Voting[];
+
+  @OneToMany(() => AnswerTag, (answerTag) => answerTag.answer)
+  answerTags: AnswerTag[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

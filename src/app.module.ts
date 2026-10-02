@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { VotingModule } from './voting/voting.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { VotingModule } from './voting/voting.module';
     UsersModule,
     AuthModule,
     VotingModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],

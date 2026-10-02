@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateQuestionDto {
   @ApiProperty({
@@ -15,4 +21,12 @@ export class CreateQuestionDto {
   })
   @IsString()
   description: string;
+
+  @ApiPropertyOptional({
+    example: ' [nestjs, jwt, postgres]',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }
