@@ -6,6 +6,7 @@ import { Question } from './entities/questions.entity';
 import { Answer } from './entities/answers.entity';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Voting } from 'src/voting/entities/voting.entity';
+import { TagsService } from 'src/tags/tags.service';
 
 describe('QuestionsService', () => {
   let service: QuestionsService;
@@ -22,6 +23,7 @@ describe('QuestionsService', () => {
 
   const mockAnswerRepository = {
     findOne: vi.fn(),
+    findOneOrFail: vi.fn(),
     create: vi.fn(),
     save: vi.fn(),
     update: vi.fn(),
@@ -38,6 +40,13 @@ describe('QuestionsService', () => {
 
   const mockVotingRepository = {
     createQueryBuilder: vi.fn(() => mockQueryBuilder),
+  };
+
+  const mockTagsService = {
+    addQuestionTag: vi.fn(),
+    updateQuestionTags: vi.fn(),
+    addAnswerTag: vi.fn(),
+    updateAnswerTags: vi.fn(),
   };
 
   const questionDto = {
@@ -68,6 +77,10 @@ describe('QuestionsService', () => {
         {
           provide: getRepositoryToken(Voting),
           useValue: mockVotingRepository,
+        },
+        {
+          provide: TagsService,
+          useValue: mockTagsService,
         },
       ],
     }).compile();
@@ -305,6 +318,7 @@ describe('QuestionsService', () => {
 
     mockAnswerRepository.create.mockReturnValue(answer);
     mockAnswerRepository.save.mockResolvedValue(answer);
+    mockAnswerRepository.findOneOrFail.mockResolvedValue(answer);
 
     const result = await service.createAnswer(questionId, answer, userId);
 
